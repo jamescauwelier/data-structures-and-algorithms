@@ -135,3 +135,17 @@ impl <'a> IntoIterator for &'a MyVector {
         }
     }
 }
+
+#[macro_export]
+macro_rules! myvec {
+    ($($x: expr),*) => {
+        {
+            let mut v = MyVector::new();
+        $(
+            v.add($x);
+        )*
+
+        v
+        }
+    };
+}
