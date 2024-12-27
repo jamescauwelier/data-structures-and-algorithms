@@ -87,6 +87,22 @@ impl MyVector {
         // updates the current length of the vector
         self.len += 1;
     }
+
+    pub fn drop(&mut self, index: usize) {
+        unsafe {
+            // what is the ptr of the element to be removed?
+            let to_be_removed = self.data_ptr.add(index);
+
+            // copy the remaining elements in that location
+            std::ptr::copy(to_be_removed.add(1), to_be_removed, self.len - index - 1);
+
+            // need to adjust len
+            self.len -= 1;
+
+            // no need to dealloc since the capacity won't be changed
+            // on next 'add', the data will be overwritten
+        }
+    }
 }
 
 pub struct MyVectorIteratorState<'a> {

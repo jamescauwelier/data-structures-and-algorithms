@@ -57,3 +57,18 @@ fn a_vector_can_be_iterated_on() {
 
     assert_eq!(4, counter);
 }
+
+#[test]
+fn elements_can_be_dropped() {
+    let mut v = MyVector::new();
+    v.add(1);
+    v.add(2);
+    v.add(3);
+    v.add(4);
+    v.drop(1);
+    v.drop(0);
+
+    assert_eq!(&3, v.get(0));
+    assert_eq!(&4, v.get(1));
+    assert!(!v.has(2));
+}
