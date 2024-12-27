@@ -41,3 +41,19 @@ fn without_adding_an_element_cannot_be_found() {
     let result = v.find(|x| x == &1);
     assert_eq!(None, result);
 }
+
+#[test]
+fn a_vector_can_be_iterated_on() {
+    let mut v = MyVector::new();
+    v.add(1);
+    v.add(2);
+    v.add(3);
+    v.add(4);
+
+    let mut counter = 0;
+    for _ in v.into_iter() {
+        counter += 1;
+    }
+
+    assert_eq!(4, counter);
+}

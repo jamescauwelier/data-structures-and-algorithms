@@ -20,6 +20,10 @@ impl MyVector {
         self.len
     }
 
+    pub fn has(&self, index: usize) -> bool {
+        index < self.len
+    }
+
     pub fn get(&self, index: usize) -> &usize {
         unsafe {
             let ptr = self.data_ptr.add(index) as *const usize;
@@ -82,5 +86,36 @@ impl MyVector {
 
         // updates the current length of the vector
         self.len += 1;
+    }
+}
+
+pub struct MyVectorIteratorState<'a> {
+    vec: &'a MyVector,
+    current: usize
+}
+
+impl <'a> Iterator for MyVectorIteratorState<'a> {
+    type Item = &'a usize;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.vec.has(self.current) {
+            let i = self.current;
+            self.current += 1;
+            Some(self.vec.get(i))
+        } else {
+            None
+        }
+    }
+}
+
+impl <'a> IntoIterator for &'a MyVector {
+    type Item = &'a usize;
+    type IntoIter = MyVectorIteratorState<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        MyVectorIteratorState {
+            vec: self,
+            current: 0
+        }
     }
 }
