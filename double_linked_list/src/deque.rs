@@ -1,20 +1,20 @@
 pub mod item;
 
-use std::ptr;
 use crate::deque::item::Item;
+use std::alloc::Layout;
 
 pub struct Deque<T> {
     first: *mut Item<T>,
     last: *mut Item<T>,
-    len: usize
+    len: usize,
 }
 
-impl <T> Deque<T> {
+impl<T> Deque<T> {
     pub fn create() -> Deque<T> {
         Deque {
             first: std::ptr::null_mut(),
             last: std::ptr::null_mut(),
-            len: 0
+            len: 0,
         }
     }
 
@@ -22,24 +22,26 @@ impl <T> Deque<T> {
         self.len
     }
 
+    fn push_first(&mut self, x: T) {
+        // function can only be used when there are no other elements in the deque
+        assert!(self.first.is_null());
+        assert!(self.last.is_null());
+
+        let ptr = Item::create(x);
+        self.first = ptr;
+        self.last = ptr;
+        self.len += 1;
+    }
+
     pub fn push_left(&mut self, x: T) {
         if self.first.is_null() {
-            assert!(self.last.is_null(), "If there is no first element, there can also not be a last one");
-            let item = Item::create(x);
+            self.push_first(x);
+        }
+    }
 
-            let layout = std::alloc::Layout::new::<Item<T>>();
-            let ptr = unsafe {std::alloc::alloc(layout) as *mut Item<T>};
-            if ptr.is_null() {
-                std::alloc::handle_alloc_error(layout);
-            }
-
-            unsafe {
-                ptr::write(ptr, item);
-            }
-
-            self.first = ptr;
-            self.last = ptr;
-            self.len += 1;
+    pub fn push_right(&mut self, x: T) {
+        if self.last.is_null() {
+            self.push_first(x);
         }
     }
 
@@ -47,10 +49,7 @@ impl <T> Deque<T> {
         if self.first.is_null() {
             None
         } else {
-            unsafe {
-                let a = &(* self.first);
-                Some(&(* self.first))
-            }
+            unsafe { Some(&(*self.first)) }
         }
     }
 
@@ -58,8 +57,28 @@ impl <T> Deque<T> {
         if self.last.is_null() {
             None
         } else {
-            unsafe {
-                Some(&(* self.last))
+            unsafe { Some(&(*self.last)) }
+        }
+    }
+}
+
+impl<T> Drop for Deque<T> {
+    fn drop(&mut self) {
+        // checks if there are any elements to drop
+        if !self.first.is_null() {
+            let mut nxt = self.first;
+
+            // iterates through the list using the pointers in the
+            // `right` property of each item, dropping each item
+            // in the process
+            while !nxt.is_null() {
+                let ptr = nxt;
+                let item = unsafe { &*nxt };
+                nxt = item.right;
+
+                unsafe {
+                    std::alloc::dealloc(ptr as *mut u8, Layout::new::<Item<T>>());
+                };
             }
         }
     }

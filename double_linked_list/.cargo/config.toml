@@ -1,0 +1,2 @@
+[alias]
+ub = "miri test -Znext-lockfile-bump"
