@@ -34,14 +34,40 @@ impl<T> Deque<T> {
     }
 
     pub fn push_left(&mut self, x: T) {
-        if self.first.is_null() {
+        if self.first.is_null() || self.last.is_null() {
             self.push_first(x);
+        } else {
+            // creates the new item
+            let ptr = Item::create(x);
+            let item = unsafe { &mut *ptr };
+            let first = unsafe { &mut *self.first };
+
+            // sets the correct links between this item and the previous outer left item (first)
+            item.right = self.first;
+            first.left = ptr;
+            self.first = ptr;
+
+            // updates inner state
+            self.len += 1;
         }
     }
 
     pub fn push_right(&mut self, x: T) {
-        if self.last.is_null() {
+        if self.first.is_null() || self.last.is_null() {
             self.push_first(x);
+        } else {
+            // creates the new item
+            let ptr = Item::create(x);
+            let item = unsafe { &mut *ptr };
+            let last = unsafe { &mut *self.last };
+
+            // sets the correct links between this item and the previous outer right item (last)
+            item.left = self.last;
+            last.right = ptr;
+            self.last = ptr;
+
+            // updates inner state
+            self.len += 1;
         }
     }
 

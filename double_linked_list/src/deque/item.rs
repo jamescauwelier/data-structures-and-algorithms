@@ -33,10 +33,18 @@ impl<T> Item<T> {
     }
 
     pub fn left(&self) -> Option<&Item<T>> {
-        None
+        if self.left.is_null() {
+            None
+        } else {
+            Some(unsafe { &*self.left })
+        }
     }
 
     pub fn right(&self) -> Option<&Item<T>> {
-        None
+        if self.right.is_null() {
+            None
+        } else {
+            Some(unsafe { &*self.right })
+        }
     }
 }

@@ -43,3 +43,43 @@ fn push_right_once() {
     assert_eq!(None, last.left());
     assert_eq!(None, last.right());
 }
+
+#[test]
+fn push_left_twice() {
+    let mut data: Deque<usize> = Deque::create();
+    data.push_left(1);
+    data.push_left(2);
+
+    assert_eq!(2, data.len());
+
+    let first = data.first().unwrap();
+    let last = data.last().unwrap();
+
+    assert_eq!(&2, first.value());
+    assert_eq!(None, first.left());
+    assert_eq!(Some(last), first.right());
+
+    assert_eq!(&1, last.value());
+    assert_eq!(Some(first), last.left());
+    assert_eq!(None, last.right());
+}
+
+#[test]
+fn push_right_twice() {
+    let mut data: Deque<usize> = Deque::create();
+    data.push_right(1);
+    data.push_right(2);
+
+    assert_eq!(2, data.len());
+
+    let first = data.first().unwrap();
+    let last = data.last().unwrap();
+
+    assert_eq!(&1, first.value());
+    assert_eq!(None, first.left());
+    assert_eq!(Some(last), first.right());
+
+    assert_eq!(&2, last.value());
+    assert_eq!(Some(first), last.left());
+    assert_eq!(None, last.right());
+}
