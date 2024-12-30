@@ -131,29 +131,131 @@ where
 }
 
 #[cfg(test)]
+pub(crate) mod arbitrary_deque {
+    use crate::deque::Deque;
+    use proptest::arbitrary::{any, Arbitrary};
+    use proptest::collection::vec;
+    use proptest::prelude::{BoxedStrategy, Just, Strategy};
+    use proptest::prop_oneof;
+    use std::fmt::Debug;
+
+    pub(crate) trait TestRequirements:
+        PartialEq + Clone + Debug + Arbitrary + 'static
+    {
+    }
+    impl<T: PartialEq + Clone + Debug + Arbitrary + 'static> TestRequirements for T {}
+
+    #[derive(Debug, Clone, PartialEq)]
+    pub(crate) enum ArbitraryDequeOperation<T: TestRequirements> {
+        PushLeft(T),
+        PushRight(T),
+    }
+
+    impl<T: TestRequirements> ArbitraryDequeOperation<T> {
+        pub(super) fn apply(&self, mut deque: Deque<T>) -> Deque<T> {
+            match self {
+                ArbitraryDequeOperation::PushLeft(v) => {
+                    deque.push_left(v.clone());
+                }
+                ArbitraryDequeOperation::PushRight(v) => {
+                    deque.push_right(v.clone());
+                }
+            }
+
+            deque
+        }
+    }
+
+    impl<T: TestRequirements> Arbitrary for ArbitraryDequeOperation<T> {
+        type Parameters = ();
+
+        fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
+            (any::<T>())
+                .prop_flat_map(|value| {
+                    prop_oneof![
+                        Just(ArbitraryDequeOperation::PushLeft(value.clone())),
+                        Just(ArbitraryDequeOperation::PushRight(value.clone()))
+                    ]
+                })
+                .boxed()
+        }
+
+        type Strategy = BoxedStrategy<ArbitraryDequeOperation<T>>;
+    }
+
+    #[allow(unused_mut)]
+    fn apply_operations<T: TestRequirements>(
+        mut input: (Deque<T>, Vec<ArbitraryDequeOperation<T>>),
+    ) -> Deque<T> {
+        let mut data = input.0;
+        for op in input.1 {
+            data = op.apply(data);
+        }
+
+        data
+    }
+
+    impl<T: TestRequirements> Arbitrary for Deque<T> {
+        type Parameters = ();
+
+        fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
+            (
+                Just(Deque::<T>::create()),
+                vec(any::<ArbitraryDequeOperation<T>>(), 0..100),
+            )
+                .prop_map(apply_operations)
+                .boxed()
+        }
+
+        type Strategy = BoxedStrategy<Deque<T>>;
+    }
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use proptest::prelude::*;
 
-    impl Arbitrary for Deque<usize> {
-        type Parameters = ();
-
-        fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
-            let data = Deque::create();
-
-            Just(data).boxed()
-        }
-
-        type Strategy = BoxedStrategy<Deque<usize>>;
-    }
-
     proptest! {
         #[test]
         #[cfg_attr(miri, ignore)]
-        fn an_item_pushed_left_becomes_the_first_item(mut data: Deque<usize>, value: usize) {
-            data.push_left(value);
+        fn pushing_left_updates_the_first_item(mut original: Deque<usize>, value: usize) {
+            original.push_left(value);
+            assert_eq!(original.first().unwrap().value(), &value);
+        }
 
-            assert_eq!(data.first().unwrap().value(), &value);
+        #[test]
+        fn pushing_left_changes_the_deque(mut original: Deque<usize>, value: usize) {
+            let mut updated = original.clone();
+            updated.push_left(value);
+            assert_ne!(original, updated);
+        }
+
+        #[test]
+        fn pushing_left_increases_len_by_one(mut original: Deque<usize>, value: usize) {
+            let original_len = original.len();
+            original.push_left(value);
+            assert_eq!(original.len(), original_len + 1);
+        }
+
+        #[test]
+        fn pushing_right_updates_the_last_item(mut original: Deque<usize>, value: usize) {
+            original.push_right(value);
+            assert_eq!(original.last().unwrap().value(), &value);
+        }
+
+        #[test]
+        fn pushing_right_changes_the_deque(mut original: Deque<usize>, value: usize) {
+            let mut updated = original.clone();
+            updated.push_right(value);
+            assert_ne!(original, updated);
+        }
+
+        #[test]
+        fn pushing_right_increases_len_by_one(mut original: Deque<usize>, value: usize) {
+            let original_len = original.len();
+            original.push_right(value);
+            assert_eq!(original.len(), original_len + 1);
         }
     }
 

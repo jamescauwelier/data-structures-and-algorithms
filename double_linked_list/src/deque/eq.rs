@@ -40,6 +40,14 @@ mod tests {
     }
 
     #[test]
+    fn cloned_deques_are_equal() {
+        let x1: Deque<i64> = deque![];
+        let x2: Deque<i64> = x1.clone();
+
+        assert_eq!(x1, x2);
+    }
+
+    #[test]
     fn equal_deques() {
         let x1: Deque<i64> = deque![1, 2, 3];
         let x2: Deque<i64> = deque![1, 2, 3];
