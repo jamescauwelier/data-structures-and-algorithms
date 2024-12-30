@@ -1,6 +1,8 @@
+#[macro_export]
 macro_rules! deque {
     ( $( $x:expr ),* ) => {
         {
+            #[allow(unused_mut)]
             let mut temp_deque = crate::deque::Deque::create();
             $(
                 temp_deque.push_right($x);
