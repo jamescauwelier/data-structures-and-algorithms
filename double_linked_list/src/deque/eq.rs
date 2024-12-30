@@ -28,54 +28,71 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::deque;
-    use crate::deque::Deque;
 
-    #[test]
-    fn empty_deques_are_equal() {
-        let x1: Deque<i64> = deque![];
-        let x2: Deque<i64> = deque![];
+    mod unit_tests {
+        use crate::deque;
+        use crate::deque::Deque;
 
-        assert_eq!(x1, x2);
+        #[test]
+        fn empty_deques_are_equal() {
+            let x1: Deque<i64> = deque![];
+            let x2: Deque<i64> = deque![];
+
+            assert_eq!(x1, x2);
+        }
+
+        #[test]
+        fn cloned_deques_are_equal() {
+            let x1: Deque<i64> = deque![];
+            let x2: Deque<i64> = x1.clone();
+
+            assert_eq!(x1, x2);
+        }
+
+        #[test]
+        fn equal_deques() {
+            let x1: Deque<i64> = deque![1, 2, 3];
+            let x2: Deque<i64> = deque![1, 2, 3];
+
+            assert_eq!(x1, x2);
+        }
+
+        #[test]
+        fn different_deques_1() {
+            let x1: Deque<i64> = deque![1, 2, 3];
+            let x2: Deque<i64> = deque![3, 2, 1];
+
+            assert_ne!(x1, x2);
+        }
+
+        #[test]
+        fn different_deques_2() {
+            let x1: Deque<i64> = deque![1, 2, 3];
+            let x2: Deque<i64> = deque![1, 2];
+
+            assert_ne!(x1, x2);
+        }
+
+        #[test]
+        fn different_deques_3() {
+            let x1: Deque<i64> = deque![1, 2, 3];
+            let x2: Deque<i64> = deque![1, 2, 3, 4];
+
+            assert_ne!(x1, x2);
+        }
     }
 
-    #[test]
-    fn cloned_deques_are_equal() {
-        let x1: Deque<i64> = deque![];
-        let x2: Deque<i64> = x1.clone();
+    mod property_tests {
+        use crate::deque;
+        use crate::deque::Deque;
+        use proptest::prelude::*;
 
-        assert_eq!(x1, x2);
-    }
-
-    #[test]
-    fn equal_deques() {
-        let x1: Deque<i64> = deque![1, 2, 3];
-        let x2: Deque<i64> = deque![1, 2, 3];
-
-        assert_eq!(x1, x2);
-    }
-
-    #[test]
-    fn different_deques_1() {
-        let x1: Deque<i64> = deque![1, 2, 3];
-        let x2: Deque<i64> = deque![3, 2, 1];
-
-        assert_ne!(x1, x2);
-    }
-
-    #[test]
-    fn different_deques_2() {
-        let x1: Deque<i64> = deque![1, 2, 3];
-        let x2: Deque<i64> = deque![1, 2];
-
-        assert_ne!(x1, x2);
-    }
-
-    #[test]
-    fn different_deques_3() {
-        let x1: Deque<i64> = deque![1, 2, 3];
-        let x2: Deque<i64> = deque![1, 2, 3, 4];
-
-        assert_ne!(x1, x2);
+        proptest! {
+            #[test]
+            fn cloned_deques_are_the_same(original: Deque<usize>){
+                let duplicate = original.clone();
+                assert_eq! (original, duplicate);
+            }
+        }
     }
 }
