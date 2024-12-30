@@ -83,12 +83,12 @@ mod tests {
     }
 
     mod property_tests {
-        use crate::deque;
         use crate::deque::Deque;
         use proptest::prelude::*;
 
         proptest! {
             #[test]
+            #[cfg_attr(miri, ignore)]
             fn cloned_deques_are_the_same(original: Deque<usize>){
                 let duplicate = original.clone();
                 assert_eq! (original, duplicate);

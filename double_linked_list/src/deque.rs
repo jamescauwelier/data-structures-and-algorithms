@@ -225,6 +225,7 @@ mod tests {
         }
 
         #[test]
+        #[cfg_attr(miri, ignore)]
         fn pushing_left_changes_the_deque(mut original: Deque<usize>, value: usize) {
             let mut updated = original.clone();
             updated.push_left(value);
@@ -232,6 +233,7 @@ mod tests {
         }
 
         #[test]
+        #[cfg_attr(miri, ignore)]
         fn pushing_left_increases_len_by_one(mut original: Deque<usize>, value: usize) {
             let original_len = original.len();
             original.push_left(value);
@@ -239,12 +241,14 @@ mod tests {
         }
 
         #[test]
+        #[cfg_attr(miri, ignore)]
         fn pushing_right_updates_the_last_item(mut original: Deque<usize>, value: usize) {
             original.push_right(value);
             assert_eq!(original.last().unwrap().value(), &value);
         }
 
         #[test]
+        #[cfg_attr(miri, ignore)]
         fn pushing_right_changes_the_deque(mut original: Deque<usize>, value: usize) {
             let mut updated = original.clone();
             updated.push_right(value);
@@ -252,6 +256,7 @@ mod tests {
         }
 
         #[test]
+        #[cfg_attr(miri, ignore)]
         fn pushing_right_increases_len_by_one(mut original: Deque<usize>, value: usize) {
             let original_len = original.len();
             original.push_right(value);
