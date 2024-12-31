@@ -1,4 +1,4 @@
-pub mod clone;
+pub mod clone_it;
 mod eq;
 pub mod item;
 mod iterator;
@@ -7,20 +7,17 @@ pub mod macros;
 use crate::deque::item::Item;
 use std::alloc::Layout;
 
+pub trait DequeTypeRequirements: PartialEq + Clone {}
+impl<T: PartialEq + Clone> DequeTypeRequirements for T {}
+
 #[derive(Debug)]
-pub struct Deque<T>
-where
-    T: PartialEq,
-{
+pub struct Deque<T: DequeTypeRequirements> {
     first: *mut Item<T>,
     last: *mut Item<T>,
     len: usize,
 }
 
-impl<T> Deque<T>
-where
-    T: PartialEq,
-{
+impl<T: DequeTypeRequirements> Deque<T> {
     pub fn create() -> Deque<T> {
         Deque {
             first: std::ptr::null_mut(),
@@ -88,12 +85,68 @@ where
         }
     }
 
-    pub fn pop_left(&mut self) -> Option<&Item<T>> {
-        None
+    pub fn pop_left(&mut self) -> Option<T> {
+        if let Some(first) = self.first() {
+            let ptr = self.first;
+            let deleted = Some((*first.value()).clone());
+            if first.right_ptr.is_null() {
+                // there is only one element, so the deque is now empty
+                self.first = std::ptr::null_mut();
+                self.last = std::ptr::null_mut();
+            } else {
+                // if the first item points to a second, the second needs to update its left pointer
+                let second_ptr = first.right_ptr;
+                let second = unsafe { &mut *second_ptr };
+                second.left_ptr = std::ptr::null_mut();
+
+                // the second item now also becomes the first
+                self.first = second_ptr;
+            }
+
+            // the first item needs to be deallocated
+            unsafe {
+                std::alloc::dealloc(ptr as *mut u8, Layout::new::<Item<T>>());
+            }
+
+            // adjust the len
+            self.len -= 1;
+
+            deleted
+        } else {
+            None
+        }
     }
 
-    pub fn pop_right(&mut self) -> Option<&Item<T>> {
-        None
+    pub fn pop_right(&mut self) -> Option<T> {
+        if let Some(last) = self.last() {
+            let ptr = self.last;
+            let deleted = Some((*last.value()).clone());
+            if last.left_ptr.is_null() {
+                // there is only one element, so the deque is now empty
+                self.first = std::ptr::null_mut();
+                self.last = std::ptr::null_mut();
+            } else {
+                // if the last item points to a second to last, the second to last needs to update its right pointer to null
+                let previous_ptr = last.left_ptr;
+                let second_to_last = unsafe { &mut *previous_ptr };
+                second_to_last.right_ptr = std::ptr::null_mut();
+
+                // the second to last item now also becomes the last
+                self.last = previous_ptr;
+            }
+
+            // the first item needs to be deallocated
+            unsafe {
+                std::alloc::dealloc(ptr as *mut u8, Layout::new::<Item<T>>());
+            }
+
+            // adjust the len
+            self.len -= 1;
+
+            deleted
+        } else {
+            None
+        }
     }
 
     pub fn first(&self) -> Option<&Item<T>> {
@@ -113,10 +166,7 @@ where
     }
 }
 
-impl<T> Drop for Deque<T>
-where
-    T: PartialEq,
-{
+impl<T: DequeTypeRequirements> Drop for Deque<T> {
     fn drop(&mut self) {
         // checks if there are any elements to drop
         if !self.first.is_null() {
@@ -222,6 +272,7 @@ pub(crate) mod arbitrary_deque {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::deque;
     use proptest::prelude::*;
 
     proptest! {
@@ -287,10 +338,12 @@ mod tests {
         #[cfg_attr(miri, ignore)]
         fn popping_left_places_next_item_first(mut original: Deque<usize>) {
             if let Some(first) = original.clone().first() {
+                let _ = original.pop_left();
                 if let Some(second) = first.right() {
-                    let _ = original.pop_left();
                     // note: we can only compare the value, as the left pointer of the second item has now changed
                     assert_eq!(original.first().unwrap().value(), second.value());
+                } else {
+                    assert_eq!(original.first(), None);
                 }
             }
         }
@@ -311,13 +364,23 @@ mod tests {
         #[cfg_attr(miri, ignore)]
         fn popping_right_makes_previous_item_last(mut original: Deque<usize>) {
             if let Some(last) = original.clone().last() {
-                if let Some(previous) = last.left() {
-                    let _ = original.pop_right();
+                let _ = original.pop_right();
+                if let Some(p) = last.left() {
                     // note: we can only compare the value, as the right pointer of the previous to last item has now changed
-                    assert_eq!(original.last().unwrap().value(), previous.value());
+                    assert_eq!(original.last().unwrap().value(), p.value());
+                } else {
+                    assert_eq!(original.last(), None);
                 }
             }
         }
+    }
+
+    #[test]
+    fn pop_right_once_with_single_item_deque() {
+        let mut data = deque![1];
+        let left = data.last().unwrap().left();
+        data.pop_right();
+        assert_eq!(data, deque![]);
     }
 
     #[test]

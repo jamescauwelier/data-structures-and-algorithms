@@ -1,17 +1,11 @@
 use crate::deque::item::Item;
-use crate::deque::Deque;
+use crate::deque::{Deque, DequeTypeRequirements};
 
-pub struct DequeIterator<'a, T>
-where
-    T: PartialEq,
-{
+pub struct DequeIterator<'a, T: DequeTypeRequirements> {
     current: Option<&'a Item<T>>,
 }
 
-impl<'a, T> Iterator for DequeIterator<'a, T>
-where
-    T: PartialEq,
-{
+impl<'a, T: DequeTypeRequirements> Iterator for DequeIterator<'a, T> {
     type Item = &'a Item<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -33,10 +27,7 @@ where
     }
 }
 
-impl<'a, T> IntoIterator for &'a Deque<T>
-where
-    T: PartialEq,
-{
+impl<'a, T: DequeTypeRequirements> IntoIterator for &'a Deque<T> {
     type Item = &'a Item<T>;
     type IntoIter = DequeIterator<'a, T>;
 

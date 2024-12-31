@@ -1,9 +1,6 @@
-use crate::deque::Deque;
+use crate::deque::{Deque, DequeTypeRequirements};
 
-impl<T> PartialEq for Deque<T>
-where
-    T: PartialEq,
-{
+impl<T: DequeTypeRequirements> PartialEq for Deque<T> {
     fn eq(&self, other: &Self) -> bool {
         let mut iter_self = self.into_iter();
         let mut iter_other = other.into_iter();
