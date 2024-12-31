@@ -207,16 +207,24 @@ pub(crate) mod arbitrary_deque {
     pub(crate) enum ArbitraryDequeOperation<T: TestRequirements> {
         PushLeft(T),
         PushRight(T),
+        PopLeft,
+        PopRight,
     }
 
     impl<T: TestRequirements> ArbitraryDequeOperation<T> {
         pub(super) fn apply(&self, mut deque: Deque<T>) -> Deque<T> {
             match self {
                 ArbitraryDequeOperation::PushLeft(v) => {
-                    deque.push_left(v.clone());
+                    let _ = deque.push_left(v.clone());
                 }
                 ArbitraryDequeOperation::PushRight(v) => {
-                    deque.push_right(v.clone());
+                    let _ = deque.push_right(v.clone());
+                }
+                ArbitraryDequeOperation::PopLeft => {
+                    let _ = deque.pop_left();
+                }
+                ArbitraryDequeOperation::PopRight => {
+                    let _ = deque.pop_right();
                 }
             }
 
@@ -232,7 +240,9 @@ pub(crate) mod arbitrary_deque {
                 .prop_flat_map(|value| {
                     prop_oneof![
                         Just(ArbitraryDequeOperation::PushLeft(value.clone())),
-                        Just(ArbitraryDequeOperation::PushRight(value.clone()))
+                        Just(ArbitraryDequeOperation::PushRight(value.clone())),
+                        Just(ArbitraryDequeOperation::PopLeft),
+                        Just(ArbitraryDequeOperation::PopRight)
                     ]
                 })
                 .boxed()
@@ -378,7 +388,6 @@ mod tests {
     #[test]
     fn pop_right_once_with_single_item_deque() {
         let mut data = deque![1];
-        let left = data.last().unwrap().left();
         data.pop_right();
         assert_eq!(data, deque![]);
     }
