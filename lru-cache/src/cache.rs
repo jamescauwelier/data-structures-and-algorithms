@@ -3,6 +3,7 @@ pub mod hasher;
 use crate::cache::DeleteResult::KeyNotFound;
 use crate::cache::GetResult::{Found, NotFound};
 use hasher::Hasher;
+use std::alloc::{handle_alloc_error, Layout};
 use std::marker::PhantomData;
 
 pub trait CacheKey: Hasher + Clone + PartialEq {}
@@ -15,6 +16,20 @@ impl<T: Clone> CacheValue for T {}
 struct CacheEntry<K: CacheKey, V: CacheValue> {
     key: K,
     value: V,
+}
+
+impl<K: CacheKey, V: CacheValue> CacheEntry<K, V> {
+    pub(crate) fn create(key: K, value: V) -> *mut CacheEntry<K, V> {
+        unsafe {
+            let layout = Layout::new::<CacheEntry<K, V>>();
+            let ptr = std::alloc::alloc(layout) as *mut CacheEntry<K, V>;
+            if ptr.is_null() {
+                handle_alloc_error(layout);
+            }
+
+            ptr
+        }
+    }
 }
 
 /// # Cache (LRU)
@@ -143,7 +158,16 @@ mod tests {
 
     #[test]
     fn overwrite_an_existing_key() {
-        unimplemented!()
+        let mut cache = Cache::<usize, usize>::empty(3, 3).unwrap();
+        cache.set(1, 1);
+        cache.set(2, 2);
+        cache.set(3, 3);
+        cache.set(4, 4);
+
+        // since the capacity is 3, the first element would've been cleared now
+
+        assert_eq!(cache.get(1), NotFound { key: 1 });
+        assert_eq!(cache.get(2), Found { key: 2, value: 2 });
     }
 
     #[test]
