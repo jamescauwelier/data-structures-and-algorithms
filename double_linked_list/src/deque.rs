@@ -88,6 +88,14 @@ where
         }
     }
 
+    pub fn pop_left(&mut self) -> Option<&Item<T>> {
+        None
+    }
+
+    pub fn pop_right(&mut self) -> Option<&Item<T>> {
+        None
+    }
+
     pub fn first(&self) -> Option<&Item<T>> {
         if self.first.is_null() {
             None
@@ -261,6 +269,54 @@ mod tests {
             let original_len = original.len();
             original.push_right(value);
             assert_eq!(original.len(), original_len + 1);
+        }
+
+        #[test]
+        #[cfg_attr(miri, ignore)]
+        fn popping_left_decreases_len_by_one(mut original: Deque<usize>) {
+            let original_size = original.len();
+            let _ = original.pop_left();
+            if original_size == 0 {
+                assert_eq!(original_size, original.len());
+            } else {
+                assert_eq!(original_size-1, original.len());
+            }
+        }
+
+        #[test]
+        #[cfg_attr(miri, ignore)]
+        fn popping_left_places_next_item_first(mut original: Deque<usize>) {
+            if let Some(first) = original.clone().first() {
+                if let Some(second) = first.right() {
+                    let _ = original.pop_left();
+                    // note: we can only compare the value, as the left pointer of the second item has now changed
+                    assert_eq!(original.first().unwrap().value(), second.value());
+                }
+            }
+        }
+
+        #[test]
+        #[cfg_attr(miri, ignore)]
+        fn popping_right_decreases_len_by_one(mut original: Deque<usize>){
+            let original_size = original.len();
+            let _ = original.pop_right();
+            if original_size > 0 {
+                assert_eq!(original_size-1, original.len());
+            } else {
+                assert_eq!(original_size, original.len());
+            }
+        }
+
+        #[test]
+        #[cfg_attr(miri, ignore)]
+        fn popping_right_makes_previous_item_last(mut original: Deque<usize>) {
+            if let Some(last) = original.clone().last() {
+                if let Some(previous) = last.left() {
+                    let _ = original.pop_right();
+                    // note: we can only compare the value, as the right pointer of the previous to last item has now changed
+                    assert_eq!(original.last().unwrap().value(), previous.value());
+                }
+            }
         }
     }
 
