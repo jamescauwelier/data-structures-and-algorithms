@@ -3,6 +3,7 @@ use crate::cache::entry_location::CacheEntryLocation;
 
 const CAPACITY: usize = 1000;
 
+#[derive(Debug)]
 pub(in crate::cache) struct HashMap<K: CacheKey, V: CacheValue> {
     data: Vec<Vec<CacheEntryLocation<K, V>>>,
 }

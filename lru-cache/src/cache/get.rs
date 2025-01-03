@@ -3,17 +3,13 @@ use crate::cache::Cache;
 
 impl<K: CacheKey, V: CacheValue> Cache<K, V> {
     pub fn get(&self, key: K) -> GetResult<K, V> {
-        let hash_key = key.hash(self.lookup_table_capacity);
-
-        let found = self.lookup_table[hash_key]
-            .iter()
-            .find(|x| unsafe { (***x).key == key })
-            .map(|x| unsafe { (**x).value.clone() });
-
-        if let Some(value) = found {
-            GetResult::Found { key, value }
-        } else {
-            GetResult::NotFound { key }
+        match self.hashmap.get(key.clone()) {
+            None => GetResult::NotFound { key },
+            Some(entry_location) => {
+                let entry_ptr = unsafe { &*entry_location }.location_ptr;
+                let value = unsafe { &*entry_ptr }.value.clone();
+                GetResult::Found { key, value }
+            }
         }
     }
 }

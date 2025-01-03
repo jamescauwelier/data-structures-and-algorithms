@@ -1,12 +1,16 @@
 use crate::cache::entry::{CacheKey, CacheValue};
-use crate::cache::get::GetResult;
 use crate::cache::Cache;
 
 impl<K: CacheKey, V: CacheValue> Cache<K, V> {
-    pub fn drop(&self, key: K) -> DropResult<K> {
-        match self.get(key) {
-            GetResult::NotFound { key } => DropResult::KeyNotFound { key },
-            GetResult::Found { key, .. } => DropResult::Dropped { key },
+    pub fn drop(&mut self, key: K) -> DropResult<K> {
+        match self.hashmap.get(key.clone()) {
+            None => DropResult::KeyNotFound { key },
+            Some(cache_entry_location) => {
+                unsafe { self.entries.drop(cache_entry_location.location_ptr) };
+                self.hashmap.drop(key.clone());
+
+                DropResult::Dropped { key }
+            }
         }
     }
 }
@@ -21,11 +25,12 @@ pub enum DropResult<K: CacheKey> {
 mod tests {
     use crate::cache::drop::DropResult;
     use crate::cache::drop::DropResult::KeyNotFound;
+    use crate::cache::get::GetResult;
     use crate::cache::Cache;
 
     #[test]
     fn cannot_drop_a_missing_key() {
-        let cache = Cache::<usize, usize>::empty(10, 500).unwrap();
+        let mut cache = Cache::<usize, usize>::empty(10, 500).unwrap();
         assert_eq!(cache.drop(1), KeyNotFound { key: 1 });
     }
 
@@ -34,5 +39,13 @@ mod tests {
         let mut cache = Cache::<usize, usize>::empty(10, 500).unwrap();
         cache.set(1, 123);
         assert_eq!(cache.drop(1), DropResult::Dropped { key: 1 });
+    }
+
+    #[test]
+    fn a_dropped_key_cannot_be_get() {
+        let mut cache = Cache::<usize, usize>::empty(10, 500).unwrap();
+        cache.set(1, 123);
+        cache.drop(1);
+        assert_eq!(cache.get(1), GetResult::NotFound { key: 1 });
     }
 }

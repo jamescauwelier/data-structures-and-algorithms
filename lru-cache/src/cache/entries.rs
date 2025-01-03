@@ -3,6 +3,7 @@ use std::alloc::Layout;
 
 type CacheEntryPtr<K: CacheKey, V: CacheValue> = *mut CacheEntry<K, V>;
 
+#[derive(Debug)]
 pub(in crate::cache) struct CacheEntries<K: CacheKey, V: CacheValue> {
     first: *mut CacheEntry<K, V>,
     last: *mut CacheEntry<K, V>,

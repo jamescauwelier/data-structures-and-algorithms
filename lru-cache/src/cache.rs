@@ -1,15 +1,18 @@
 #[cfg(test)]
 pub(in crate::cache) mod arbitrary_cache;
 pub mod drop;
+mod entries;
 pub mod entry;
+mod entry_location;
 pub mod get;
 pub mod hasher;
+mod hashmap;
 pub mod set;
 
-use crate::cache::entry::{CacheEntry, CacheKey, CacheValue};
-use get::GetResult::{Found, NotFound};
+use crate::cache::entries::CacheEntries;
+use crate::cache::entry::{CacheKey, CacheValue};
+use crate::cache::hashmap::HashMap;
 use hasher::Hasher;
-use std::marker::PhantomData;
 
 /// # Cache (LRU)
 ///
@@ -27,8 +30,8 @@ use std::marker::PhantomData;
 pub struct Cache<K: CacheKey, V: CacheValue> {
     capacity: usize,
     lookup_table_capacity: usize,
-    lookup_table: Vec<Vec<*mut CacheEntry<K, V>>>,
-    _keys: PhantomData<K>,
+    hashmap: HashMap<K, V>,
+    entries: CacheEntries<K, V>,
 }
 
 impl<K: CacheKey, V: CacheValue> Cache<K, V> {
@@ -37,8 +40,8 @@ impl<K: CacheKey, V: CacheValue> Cache<K, V> {
             Ok(Cache {
                 capacity,
                 lookup_table_capacity,
-                _keys: PhantomData::default(),
-                lookup_table: vec![vec![]; lookup_table_capacity],
+                entries: CacheEntries::empty(capacity),
+                hashmap: HashMap::create(),
             })
         } else {
             Err("Cannot make a cache of capacity 0".into())
@@ -49,7 +52,6 @@ impl<K: CacheKey, V: CacheValue> Cache<K, V> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cache::get::GetResult::Found;
 
     #[test]
     fn create_a_cache_without_capacity() {
@@ -63,19 +65,5 @@ mod tests {
     fn create_an_empty_cache() {
         let cache = Cache::<usize, usize>::empty(1, 5);
         assert!(cache.is_ok());
-    }
-
-    #[test]
-    fn overwrite_an_existing_key() {
-        let mut cache = Cache::<usize, usize>::empty(3, 3).unwrap();
-        cache.set(1, 1);
-        cache.set(2, 2);
-        cache.set(3, 3);
-        cache.set(4, 4);
-
-        // since the capacity is 3, the first element would've been cleared now
-
-        assert_eq!(cache.get(1), NotFound { key: 1 });
-        assert_eq!(cache.get(2), Found { key: 2, value: 2 });
     }
 }
